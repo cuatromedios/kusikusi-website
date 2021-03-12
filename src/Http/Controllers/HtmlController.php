@@ -1,10 +1,10 @@
 <?php
 
-namespace Kusikusi\Website\Http\Controllers;
+namespace App\Http\Controllers;
 
 use Kusikusi\Models\Entity;
 use Illuminate\Http\Request;
-use Kusikusi\Http\Controllers\Controller;
+use Kusikusi\Website\Models\Website;
 
 /**
  * Class HtmlController
@@ -33,6 +33,12 @@ class HtmlController extends Controller
         $result['images'] = $result['media']->where('properties.isWebImage'); */
         return view('html.'.$entity->view, $result);
     }
+    public function error(Request $request, $status)
+    {
+        $result = [ "status" => $status ];
+        $result['lang'] = $request->lang;
+        return view('html.error', $result);
+    }
 
     /**
      * The common method can be called by any other method to receive the commonly required properties to be send
@@ -46,8 +52,8 @@ class HtmlController extends Controller
             "lang" => $request->lang,
             "entity" => $currentEntity,
             "website" => Website::select('id', 'properties')
-                ->appendContents(['title'], $request->lang)
-                ->appendMedium('social')
+                ->withContent($request->lang, ['title'])
+                /* ->appendMedium('social') */
                 ->find('website'),
             /* "logo" => Medium::select('id', 'properties')
                 ->appendContents(['title'], $request->lang)
@@ -58,17 +64,17 @@ class HtmlController extends Controller
                 ->mediaOf($currentEntity->id)
                 ->get(), */
             "ancestors" => Entity::select('id', 'model')
-                ->ancestorOf($currentEntity->id)
-                ->descendantOf('website')
+                ->ancestorsOf($currentEntity->id)
+                ->descendantsOf('website')
                 ->orderBy('ancestor_relation_depth', 'desc')
-                ->appendContents(['title'], $request->lang)
-                ->appendRoute($request->lang)
+                /* ->appendContents(['title'], $request->lang)
+                ->appendRoute($request->lang) */
                 ->get(),
             "mainMenu" => Entity::select('id', 'model')
                 ->relatedBy('main-menu', 'menu')
-                ->appendContents(['title'], $request->lang)
+                /* ->appendContents(['title'], $request->lang) */
                 ->orderBy('relation_position', 'asc')
-                ->appendRoute($request->lang)
+                /* ->appendRoute($request->lang) */
                 ->isPublished()
                 ->get()
         ];
@@ -79,17 +85,16 @@ class HtmlController extends Controller
      * The children private method returns the children of an entity, with thte title content, its route and a medium
      * path if it has one.
      * @param Request $request
-     * @param EntityModel $entity
+     * @param Entity $entity
      * @return mixed
      */
-    private function children(Request $request, EntityModel $entity) {
-        $children = EntityModel::select('id', 'model')
-            ->childOf($entity->id)
-            ->appendContents(['title'], $request->lang)
+    private function children(Request $request, Entity $entity) {
+        $children = Entity::select('id', 'model')
+            ->childrenOf($entity->id)
+            /* ->appendContents(['title'], $request->lang)
             ->appendRoute($request->lang)
-            ->appendMedium('icon', $request->lang)
+            ->appendMedium('icon', $request->lang) */
             ->orderBy('position')
-            ->orderBy('title')
             ->isPublished()
             ->get();
         return $children;
